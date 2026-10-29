@@ -1,0 +1,4 @@
+pos_encoding,n_seeds,seeds,steps,final_val_loss_mean,final_val_loss_std,final_val_ppl_mean,final_val_ppl_std,best_val_loss_mean,best_val_loss_std,final_train_loss_mean,final_train_loss_std,per_seed_final_val_loss
+learned,3,0 1 2,1500,3.15288,0.01406,23.40491,0.32876,3.15275,0.01426,2.90257,0.01963,3.1382 3.1542 3.1662
+sinusoidal,3,0 1 2,1500,3.18559,0.00792,24.18206,0.19174,3.18559,0.00792,2.94907,0.01944,3.1790 3.1834 3.1944
+none,3,0 1 2,1500,3.35430,0.01876,28.62900,0.53471,3.35369,0.01980,3.14707,0.02859,3.3331 3.3611 3.3687

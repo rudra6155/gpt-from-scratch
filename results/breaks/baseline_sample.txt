@@ -1,0 +1,14 @@
+# checkpoint: artifacts/runs/breaks/baseline/ckpt_last.pt
+# prompt: 'ROMEO:' | max_new_tokens=120 temperature=0.8 top_k=50 top_p=0.95 seed=1337
+# model: 0.859M params, val loss 3.1378
+
+ROMEO:
+I'll fool drunt thee, in thy tither's friends.
+
+KING EDWARD IV:
+But what I come to art thou, way; I had in our common.
+
+KING EDWARD IV:
+Why, thou great keep, banish of justice!
+Was is this or hopatue for himself,
+And I being means to thy death.

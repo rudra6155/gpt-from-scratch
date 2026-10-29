@@ -1,0 +1,31 @@
+# checkpoint: artifacts/checkpoints/tiny.pt
+# prompt: 'ROMEO:' | max_new_tokens=400 temperature=0.8 top_k=50 top_p=0.95 seed=1337
+# model: 0.859M params, val loss 2.8797
+
+ROMEO:
+I'll not. Angelo, indeed.
+
+DUKE VINCENTIO:
+Most mercy, sir, the Angelo
+His nursed stealing, whose friends.
+
+MARIANA:
+At same off, I cannot or expeile.
+
+POMPEY:
+O, that who! 'tis Pettried, and my grace
+As if you find to make your brother,
+Not against the dangerous souls,
+To speak their life in thy distrobsomsion,
+And thus had have firest a father:
+Take meaning, my business place to enough,
+And I had give the place of pity,
+Is all some suit-lashings down'd,
+And make a thoughts, adman, tress of the curreds,
+If I was made presently speak, and glant aloose
+And hear upon the days of Norfolk.
+
+First Citizen:
+You are to make the foot of the head
+Than rule; but I will not send you die, go with him:
+His favour me, take I have reasoned, yet I was saw

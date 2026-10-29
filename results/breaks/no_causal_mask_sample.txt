@@ -1,0 +1,5 @@
+# checkpoint: artifacts/runs/breaks/no_causal_mask/ckpt_last.pt
+# prompt: 'ROMEO:' | max_new_tokens=120 temperature=0.8 top_k=50 top_p=0.95 seed=1337
+# model: 0.859M params, val loss 0.0297
+
+ROMEO:OMEOROMEOMOMEOMOMEOMEOMEOMOMROOMOMEOMOMEOMOMEOMOMOMOMOMOOMMEOMMMMOMOMMEOMOMOMOMOMOMOMOMOOMEOMOMOMOMMOMOOMEOMOMOMOMEOOMMO

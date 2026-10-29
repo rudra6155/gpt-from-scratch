@@ -1,0 +1,5 @@
+smoke step    1 loss 5.5561
+smoke step   25 loss 1.4683
+smoke step   50 loss 0.1198
+smoke: loss 0.0927 after 52 steps in 0.5s
+SMOKE PASSED

@@ -1,0 +1,6 @@
+# keep shell scripts and the Makefile LF so they run inside Linux CI/Docker
+*.sh text eol=lf
+Makefile text eol=lf
+*.py text eol=lf
+*.pt binary
+*.png binary

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpt-scratch"
+version = "0.1.0"
+description = "A from-scratch, decoder-only GPT-style transformer in pure PyTorch (educational)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "rudra6155" }]
+# torch is installed by `make install` from the PyTorch wheel index (CPU by default,
+# CUDA via TORCH_INDEX=...). It is still listed here so `pip install .` works standalone.
+dependencies = [
+    "torch>=2.2",
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --durations=5"

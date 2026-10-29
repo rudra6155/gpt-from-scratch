@@ -1,0 +1,10 @@
+{
+  "nll": 2.8864191893873543,
+  "ppl": 17.92899418695414,
+  "tokens": 59392,
+  "ckpt": "artifacts/checkpoints/tiny.pt",
+  "split": "val",
+  "precision": "bf16",
+  "windows": "non-overlapping",
+  "block_size": 128
+}
