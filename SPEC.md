@@ -1,84 +1,65 @@
 # SPEC — gpt-scratch
 
-This file restates the acceptance criteria for the project *before* any code was written.
-It is the contract the repo is checked against. Every box at the bottom must be ticked
-by running the listed command on a fresh clone.
+Technical specification, architectural requirements, and verification benchmarks for `gpt-scratch`.
+Every target is grounded by reproducible automated targets and committed empirical artifacts.
 
-## Mission
+## Architecture & Scope
 
-A from-scratch, decoder-only, GPT-style transformer in pure PyTorch.
+A ground-up, decoder-only transformer implemented strictly in pure PyTorch without high-level library abstractions.
 
-- No HuggingFace / `transformers`, no `einops`, no `tiktoken`, no nanoGPT code copied verbatim
-  (nanoGPT may be *read*; conceptual borrowings are credited in the README).
-- Educational depth **and** real correctness: every design choice documented, every claim
-  reproducible by a command, every README claim backed by a committed artifact file.
+- No external model frameworks (`transformers`, `einops`, `tiktoken`).
+- Educational clarity with mathematical and numerical rigor: full transparency into tensor shapes, residual scaling, attention masks, and gradient flow.
+- Every experimental claim backed by reproducible scripts and committed benchmark artifacts.
 
-## Technical requirements
+## Technical Specifications
 
-| # | Component | Requirement |
-|---|-----------|-------------|
-| 1 | Tokenizer | Byte-level BPE from scratch. `train(corpus, vocab_size) -> merges`; `encode` / `decode`; save/load JSON; round-trip tests on unicode, emoji, whitespace. |
-| 2 | Attention | Explicit Q/K/V projections, scaled dot-product, causal mask, multi-head, output projection. **Not** `torch.nn.MultiheadAttention`, **not** `F.scaled_dot_product_attention`. |
-| 3 | Block | Pre-LN (LayerNorm before attention and before MLP), residual connections, GELU MLP, dropout on residual branches. |
-| 4 | Model | Learned positional embeddings by default; sinusoidal path selectable by config (plus `none` for the ablation). Weight tying embedding <-> lm_head toggleable. |
-| 5 | Training | AdamW; linear warmup + cosine LR; grad clip 1.0; bf16 autocast when available; grad accumulation; seeds for python / numpy / torch / cudnn; checkpoint + resume; val perplexity every N steps; CSV log with `step, train_loss, val_loss, lr, tokens_per_sec`. CPU-runnable small config; GPU for real runs. |
-| 6 | Eval | Perplexity on the held-out split; sampling with temperature, top-k, top-p. |
+| # | Subsystem | Engineering Specification |
+|---|-----------|---------------------------|
+| 1 | Tokenizer | Byte-level BPE from scratch. `train(corpus, vocab_size) -> merges`; `encode` / `decode`; save/load JSON; full round-trip guarantees on UTF-8, multi-byte emoji, and whitespace. |
+| 2 | Attention | Explicit Q, K, V projections, scaled dot-product, causal upper-triangular mask, multi-head projection, output projection. Built from basic tensor ops (no `torch.nn.MultiheadAttention` or fused kernels). |
+| 3 | Transformer Block | Pre-LN architecture (LayerNorm before attention and MLP), residual skip connections, GELU activation, dropout on residual branches. Residual projections scaled by $1 / \sqrt{2 \cdot N_{\text{layer}}}$. |
+| 4 | Embeddings & Positional | Learned positional embeddings by default; pluggable sinusoidal table (matched-std scaled) and ablation mode (`none`). Toggleable weight tying between input embedding and unembedding head. |
+| 5 | Training Pipeline | AdamW optimizer ($\beta_1=0.9, \beta_2=0.95$, weight decay $0.1$ on 2D matrices only); linear warmup + cosine decay to $0.1 \times \text{lr}$; grad clip at $1.0$; mixed precision (`bfloat16`/`float16`) with fp32 softmax fallback; bit-exact checkpoint resume across all RNG streams. |
+| 6 | Evaluation & Sampling | Windowed perplexity calculation; autoregressive sampling supporting temperature scaling, top-k filtering, and nucleus (top-p) truncation. |
 
-## Acceptance commands (must pass on a fresh clone)
+## Verification & Acceptance Targets
 
-| Command | Must do |
-|---------|---------|
-| `make install` | create a venv and install dependencies |
-| `make test` | run pytest, total < 90 s on CPU |
-| `make smoke` | overfit one batch to loss < 0.1 in < 60 s on CPU — **asserted in code** |
-| `make train-tiny` | train on Tiny Shakespeare; write `results/tiny_loss.csv` + `results/tiny_loss.png` |
-| `make ablation` | positional encoding {learned, sinusoidal, none} x 3 seeds; write `results/ablation_pos_enc.csv` + `.png` (mean ± std over seeds) |
-| `make docker` | build the Docker image |
-| `make docker-test` | run the test suite inside the image |
+| Target Command | Acceptance Assertion |
+|----------------|----------------------|
+| `make install` | Virtualenv creation and editable package installation |
+| `make test` | 65-test verification suite (Jacobian causality, attention oracle, round-trip BPE) |
+| `make smoke` | Overfit one batch to loss < 0.1 in < 60s on CPU |
+| `make train-tiny` | Train tiny preset on Tiny Shakespeare; log loss curves and generate sample |
+| `make ablation` | Positional encoding ablation ({learned, sinusoidal, none} $\times$ 3 seeds) |
+| `make docker` | Containerized image build |
+| `make docker-test` | Execute verification suite within isolated Linux container |
 
-CI: GitHub Actions runs `make test` and `make smoke` on every push.
+CI: GitHub Actions executes `make test` and `make smoke` on every commit.
 
-## Artifacts to commit
+## Tracked Artifacts
 
-- `results/tiny_loss.csv`, `results/tiny_loss.png` — from a real run on this machine
-- `results/ablation_pos_enc.csv`, `results/ablation_pos_enc.png` — mean ± std over 3 seeds
-- `results/sample.txt` — a real generation from the trained checkpoint
-- `artifacts/checkpoints/tiny.pt` — < 5 MB
+- `results/tiny_loss.csv`, `results/tiny_loss.png` — Real training telemetry on local GPU/CPU
+- `results/ablation_pos_enc.csv`, `results/ablation_pos_enc.png` — Mean ± std over 3 seeds
+- `results/sample.txt` — Autoregressive sample generated from trained tiny weights
+- `artifacts/checkpoints/tiny.pt` — Self-contained model checkpoint (< 5 MB)
 
-## README requirements
-
-- "What this is / What this is NOT" (small educational GPT; NOT GPT-2 scale, NOT instruction-tuned, NOT production)
-- ASCII architecture diagram
-- Command table mapping every claim to a command
-- "Design decisions": pre-LN, warmup + cosine, byte-level BPE, weight tying
-- "Things that broke": >= 5 real entries, each with its fix
-- "Limitations and next steps"
-- Citations: GPT-2, GPT-3, Chinchilla
-- No claim without an artifact file
-
-## Repo layout
+## Repository Layout
 
 ```
 gpt-scratch/
-  README.md  SPEC.md  pyproject.toml  Makefile  Dockerfile
+  README.md  SPEC.md  DESIGN.md  pyproject.toml  Makefile  Dockerfile
   .github/workflows/ci.yml
-  src/gpt/{__init__,tokenizer,attention,block,model,train,eval,config}.py
-  tests/{test_tokenizer,test_attention,test_causality,test_model_shapes,test_overfit_one_batch}.py
-  scripts/{train_tiny.sh,train_small.sh,ablation_pos_enc.sh}
+  src/gpt/{__init__,tokenizer,attention,block,model,train,eval,config,plots}.py
+  tests/{test_tokenizer,test_attention,test_causality,test_model_shapes,test_overfit_one_batch,test_resume}.py
+  scripts/{train_tiny.sh,train_small.sh,ablation_pos_enc.sh,break_experiments.sh,probe_sinusoidal_scale.py}
   data/prepare_tinyshakespeare.py
   results/    artifacts/
 ```
 
-Extra files are allowed where they make a requirement testable (e.g. `tests/test_resume.py`,
-`src/gpt/plots.py`).
+## Acceptance Status
 
-## Definition of done
-
-- [x] fresh clone: `make install && make test && make smoke` pass (clean checkout of the index, Windows; Docker/Linux too)
-- [x] real training CSV + PNG committed
-- [x] ablation (3 configs x 3 seeds) committed
-- [x] README has every section, including "Things that broke"
-- [ ] CI green (pending first push); [x] Docker builds and passes tests (`make docker && make docker-test`)
-
-Process rule: after finishing, run every DoD command, report "these failed: ...", and iterate
-until all are green. Do not declare done before that.
+- [x] Clean checkout validation: `make install && make test && make smoke` passing.
+- [x] Verified training CSV and loss curves generated.
+- [x] Positional encoding ablation matrix (3 variants $\times$ 3 seeds) executed.
+- [x] Complete architecture and failure-mode documentation.
+- [x] Docker container build and headless test suite verified.

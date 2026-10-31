@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gpt-scratch — Model Inspector & Inference Workbench</title>
+  <meta name="description" content="Inference workbench and evaluation suite for a from-scratch PyTorch transformer trained on Tiny Shakespeare.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="workbench">
+    <!-- Top System Header -->
+    <header class="system-header">
+      <div class="header-left">
+        <div class="brand">
+          <span class="brand-name">gpt-scratch</span>
+          <span class="brand-divider">/</span>
+          <span class="brand-desc">Model Inspector & Inference Workbench</span>
+        </div>
+      </div>
+      <div class="header-telemetry">
+        <div class="telemetry-cell">
+          <span class="telemetry-label">Device</span>
+          <span class="telemetry-value" id="device-val">Connecting...</span>
+        </div>
+        <div class="telemetry-cell">
+          <span class="telemetry-label">Weights</span>
+          <span class="telemetry-value" id="params-val">875,264 params</span>
+        </div>
+        <div class="telemetry-cell">
+          <span class="telemetry-label">Val PPL</span>
+          <span class="telemetry-value">17.81 (step 3000)</span>
+        </div>
+        <div class="telemetry-cell">
+          <span class="telemetry-label">Checkpoint</span>
+          <span class="telemetry-value">tiny.pt (3.52 MB)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="workbench-nav" role="tablist">
+      <button class="nav-tab active" id="tab-btn-inference" role="tab" data-tab="view-inference">
+        Inference & Token Inspector
+      </button>
+      <button class="nav-tab" id="tab-btn-experiments" role="tab" data-tab="view-experiments">
+        Loss Curves & Ablation Studies
+      </button>
+      <button class="nav-tab" id="tab-btn-architecture" role="tab" data-tab="view-architecture">
+        Architecture & Tensor Shapes
+      </button>
+      <button class="nav-tab" id="tab-btn-corpus" role="tab" data-tab="view-corpus">
+        Corpus & Reference Generations
+      </button>
+    </nav>
+
+    <!-- View 1: Inference & Token Inspector -->
+    <main class="workbench-view active" id="view-inference">
+      <div class="split-layout">
+        <!-- Left: Configuration & Input -->
+        <div class="pane pane-controls">
+          <div class="section-block">
+            <div class="section-header">
+              <label for="prompt-input" class="section-title">Prompt</label>
+              <span class="char-count" id="prompt-char-count">0 chars</span>
+            </div>
+            <textarea id="prompt-input" rows="4" spellcheck="false" placeholder="Enter prompt text (e.g. ROMEO:)">ROMEO:
+Thou canst not speak of that thou dost not feel:</textarea>
+
+            <div class="preset-group">
+              <span class="preset-label">Corpus presets:</span>
+              <div class="preset-chips">
+                <button type="button" class="preset-chip" data-prompt="ROMEO:&#10;">ROMEO:</button>
+                <button type="button" class="preset-chip" data-prompt="HAMLET:&#10;">HAMLET:</button>
+                <button type="button" class="preset-chip" data-prompt="GLOUCESTER:&#10;Now is the winter of our discontent">GLOUCESTER:</button>
+                <button type="button" class="preset-chip" data-prompt="KING CLAUDIUS:&#10;Though yet of Hamlet our dear brother's death">KING CLAUDIUS:</button>
+                <button type="button" class="preset-chip" data-prompt="DUKE VINCENTIO:&#10;Of government the properties to unfold">DUKE VINCENTIO:</button>
+                <button type="button" class="preset-chip" data-prompt="First Citizen:&#10;Before we proceed any further, hear me speak.">First Citizen:</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <h2 class="section-title">Sampling Hyperparameters</h2>
+            
+            <div class="param-row">
+              <div class="param-info">
+                <label for="temp-slider">Temperature (T)</label>
+                <span class="param-desc">Divides pre-softmax logits. Lower values sharpen highest probability tokens; higher values increase sample entropy.</span>
+              </div>
+              <div class="param-control">
+                <input type="range" id="temp-slider" min="0.05" max="1.50" step="0.05" value="0.80">
+                <input type="number" id="temp-num" min="0.05" max="1.50" step="0.05" value="0.80" class="num-box">
+              </div>
+            </div>
+
+            <div class="param-row">
+              <div class="param-info">
+                <label for="topk-slider">Top-k Filter</label>
+                <span class="param-desc">Restricts candidate selection to the top k most probable vocabulary entries before sampling.</span>
+              </div>
+              <div class="param-control">
+                <input type="range" id="topk-slider" min="1" max="150" step="1" value="50">
+                <input type="number" id="topk-num" min="1" max="512" step="1" value="50" class="num-box">
+              </div>
+            </div>
+
+            <div class="param-row">
+              <div class="param-info">
+                <label for="topp-slider">Top-p (Nucleus)</label>
+                <span class="param-desc">Dynamic cumulative probability cutoff (Holtzman et al.). Discards tail tokens outside the mass threshold.</span>
+              </div>
+              <div class="param-control">
+                <input type="range" id="topp-slider" min="0.10" max="1.00" step="0.05" value="0.95">
+                <input type="number" id="topp-num" min="0.10" max="1.00" step="0.05" value="0.95" class="num-box">
+              </div>
+            </div>
+
+            <div class="param-row">
+              <div class="param-info">
+                <label for="maxtok-slider">Max New Tokens</label>
+                <span class="param-desc">Autoregressive continuation length (sliding context window capped at block_size = 128).</span>
+              </div>
+              <div class="param-control">
+                <input type="range" id="maxtok-slider" min="10" max="400" step="10" value="200">
+                <input type="number" id="maxtok-num" min="10" max="500" step="10" value="200" class="num-box">
+              </div>
+            </div>
+
+            <div class="param-row">
+              <div class="param-info">
+                <label for="seed-input">Random Seed</label>
+                <span class="param-desc">Pass integer seed for deterministic PyTorch generator. Leave empty for pseudorandom.</span>
+              </div>
+              <div class="param-control">
+                <input type="number" id="seed-input" placeholder="Random" class="seed-box">
+                <button type="button" class="btn-subtle" id="btn-seed-random">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="button-bar">
+            <button type="button" class="btn-action" id="btn-generate">Generate Continuation</button>
+            <button type="button" class="btn-secondary" id="btn-stop" disabled>Halt</button>
+            <button type="button" class="btn-subtle" id="btn-clear">Reset</button>
+          </div>
+        </div>
+
+        <!-- Right: Output & Telemetry -->
+        <div class="pane pane-output">
+          <div class="output-subnav">
+            <div class="view-switch">
+              <button type="button" class="switch-btn active" id="btn-view-text">Formatted Output</button>
+              <button type="button" class="switch-btn" id="btn-view-tokens">Token Inspection</button>
+            </div>
+            <div class="output-meta">
+              <span class="meta-stat" id="stat-tokens">0 tokens</span>
+              <span class="meta-divider">•</span>
+              <span class="meta-stat" id="stat-speed">0.0 tok/s</span>
+              <span class="meta-divider">•</span>
+              <span class="meta-stat" id="stat-latency">0.00s</span>
+              <button type="button" class="btn-icon" id="btn-copy" title="Copy output">Copy</button>
+            </div>
+          </div>
+
+          <!-- Plain Text Stage -->
+          <div class="display-stage" id="stage-text">
+            <div class="output-text" id="output-text">Select a prompt or click Generate Continuation to evaluate autoregressive sampling.</div>
+          </div>
+
+          <!-- Token Inspector Stage -->
+          <div class="display-stage hidden" id="stage-tokens">
+            <div class="token-inspector-header">
+              <span>Byte-level BPE Tokenizer (Vocab: 512). Click any token to inspect byte representation and rank.</span>
+            </div>
+            <div class="token-grid" id="token-grid">
+              <div class="token-placeholder">No generated tokens to display. Run inference first.</div>
+            </div>
+            <div class="token-inspector-detail" id="token-detail-box">
+              <div class="detail-label">Token details:</div>
+              <div class="detail-content" id="token-detail-content">Hover or click a token above to inspect metadata.</div>
+            </div>
+          </div>
+
+          <!-- Technical Notes -->
+          <footer class="model-context-bar">
+            <p><strong>Model context:</strong> 0.875M parameter decoder-only transformer trained for 3,000 steps on 1.1 MB Tiny Shakespeare. It reproduces character register, meter, and dialogue turn structure. It has no world model or instruction tuning.</p>
+          </footer>
+        </div>
+      </div>
+    </main>
+
+    <!-- View 2: Loss Curves & Ablation Studies -->
+    <section class="workbench-view hidden" id="view-experiments">
+      <div class="experiments-layout">
+        <header class="section-intro">
+          <h2>Empirical Results & Ablation Analysis</h2>
+          <p>Every chart and statistic below is generated directly by the training and evaluation scripts in <code>scripts/</code> and backed by committed artifacts in <code>results/</code>.</p>
+        </header>
+
+        <div class="experiments-grid">
+          <!-- Experiment 1: Tiny Loss -->
+          <article class="experiment-panel">
+            <div class="exp-title-row">
+              <h3>Tiny Shakespeare Training Trajectory</h3>
+              <span class="exp-tag">Core Run</span>
+            </div>
+            <p class="exp-summary">Trained on 128-token context windows with AdamW ($\beta_1=0.9, \beta_2=0.95$), cosine decay from $10^{-3}$ to $10^{-4}$ after 100-step linear warmup.</p>
+            <div class="exp-figure">
+              <img src="/results/tiny_loss.png" alt="Training and Validation Loss Curve" class="figure-img">
+            </div>
+            <div class="exp-telemetry-grid">
+              <div class="telemetry-block">
+                <span class="block-num">2.880</span>
+                <span class="block-lbl">Final Val Loss (nats/token)</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">17.81</span>
+                <span class="block-lbl">Validation Perplexity</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">83.2 s</span>
+                <span class="block-lbl">GPU Training Time</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">148k</span>
+                <span class="block-lbl">Avg Tokens / Sec (bf16)</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Experiment 2: Positional Encoding Ablation -->
+          <article class="experiment-panel">
+            <div class="exp-title-row">
+              <h3>Positional Encoding Ablation (3 configs × 3 seeds)</h3>
+              <span class="exp-tag">Ablation</span>
+            </div>
+            <p class="exp-summary">Comparing Learned embeddings vs Sinusoidal encodings vs None (no positional signal) across seeds {0, 1, 2}.</p>
+            <div class="exp-figure">
+              <img src="/results/ablation_pos_enc.png" alt="Positional Encoding Ablation Comparison" class="figure-img">
+            </div>
+            <div class="exp-telemetry-grid">
+              <div class="telemetry-block">
+                <span class="block-num">2.879 ± 0.007</span>
+                <span class="block-lbl">Learned Embeddings (val loss)</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">2.887 ± 0.009</span>
+                <span class="block-lbl">Sinusoidal Scaled (val loss)</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">2.923 ± 0.012</span>
+                <span class="block-lbl">No Position (val loss)</span>
+              </div>
+              <div class="telemetry-block">
+                <span class="block-num">+0.044</span>
+                <span class="block-lbl">Degradation without Pos Enc</span>
+              </div>
+            </div>
+            <div class="exp-notes">
+              <strong>Observation:</strong> With no positional encoding, the model still achieves 2.92 nats because causal lower-triangular attention implicitly leaks relative distance (token $t$ can only attend to $\le t$). However, explicit positional encoding reduces validation loss by 0.044 nats (~1.0 perplexity point).
+            </div>
+          </article>
+
+          <!-- Experiment 3: Failure Modes -->
+          <article class="experiment-panel full-width">
+            <div class="exp-title-row">
+              <h3>Deliberate Sabotage Experiments (What Breaks)</h3>
+              <span class="exp-tag alert">Failure Modes</span>
+            </div>
+            <p class="exp-summary">Empirical verification of three failure modes executed via <code>scripts/break_experiments.sh</code>.</p>
+            <div class="exp-figure">
+              <img src="/results/breaks.png" alt="Break Experiments Loss Comparison" class="figure-img">
+            </div>
+            <div class="failure-trio">
+              <div class="failure-box">
+                <h4>No Causal Mask (Cheating)</h4>
+                <p>Training loss collapses to 0.08 nats in 500 steps because each token simply looks ahead at its label. During autoregressive sampling without ground truth labels, it repeats a single token infinitely.</p>
+              </div>
+              <div class="failure-box">
+                <h4>No Warmup + 10× LR + No Grad Clip</h4>
+                <p>Without linear warmup and gradient clipping at high learning rate, initial gradients diverge, causing severe numerical oscillation and training instability.</p>
+              </div>
+              <div class="failure-box">
+                <h4>Control Baseline</h4>
+                <p>Standard Pre-LN configuration with warmup and clipping smoothly converges to 2.88 nats, generating structured dialogue.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 3: Architecture & Implementation -->
+    <section class="workbench-view hidden" id="view-architecture">
+      <div class="architecture-layout">
+        <header class="section-intro">
+          <h2>Transformer Specification & Tensor Dimensions</h2>
+          <p>Implemented in pure PyTorch with zero dependencies on HuggingFace transformers, einops, or pre-built attention abstractions.</p>
+        </header>
+
+        <div class="spec-grid">
+          <div class="spec-card">
+            <h3>Hyperparameters</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Value</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>vocab_size</code></td>
+                  <td>512</td>
+                  <td>Byte-level BPE (256 raw bytes + 256 learned merges)</td>
+                </tr>
+                <tr>
+                  <td><code>block_size</code></td>
+                  <td>128</td>
+                  <td>Maximum sequence context length $T$</td>
+                </tr>
+                <tr>
+                  <td><code>n_layer</code></td>
+                  <td>4</td>
+                  <td>Stacked Pre-LN transformer blocks</td>
+                </tr>
+                <tr>
+                  <td><code>n_head</code></td>
+                  <td>4</td>
+                  <td>Attention heads ($d_k = 128 / 4 = 32$)</td>
+                </tr>
+                <tr>
+                  <td><code>n_embd</code></td>
+                  <td>128</td>
+                  <td>Model dimension $C$</td>
+                </tr>
+                <tr>
+                  <td><code>tie_weights</code></td>
+                  <td>True</td>
+                  <td>Tied token embedding and lm_head weight matrix</td>
+                </tr>
+                <tr>
+                  <td><code>dropout</code></td>
+                  <td>0.10</td>
+                  <td>Applied to residual connections and attention maps</td>
+                </tr>
+                <tr>
+                  <td><code>bias</code></td>
+                  <td>True</td>
+                  <td>Biases in Linear and LayerNorm projections</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="spec-card">
+            <h3>Tensor Dimensions Through Forward Pass</h3>
+            <div class="tensor-flow">
+              <div class="tensor-step">
+                <span class="tensor-name">Input IDs</span>
+                <span class="tensor-shape">(B, T)</span>
+                <span class="tensor-desc">Batch of token indices $\in [0, 511]$</span>
+              </div>
+              <div class="tensor-arrow">↓</div>
+              <div class="tensor-step">
+                <span class="tensor-name">Token + Positional Embeddings</span>
+                <span class="tensor-shape">(B, T, 128)</span>
+                <span class="tensor-desc">wte(idx) + wpe(pos) with optional sinusoidal projection</span>
+              </div>
+              <div class="tensor-arrow">↓</div>
+              <div class="tensor-step">
+                <span class="tensor-name">4× Block (Pre-LN Causal Attention + MLP)</span>
+                <span class="tensor-shape">(B, T, 128)</span>
+                <span class="tensor-desc">Explicit Q, K, V dot product with causal mask, GELU 4× expansion</span>
+              </div>
+              <div class="tensor-arrow">↓</div>
+              <div class="tensor-step">
+                <span class="tensor-name">Final LayerNorm & Tied lm_head</span>
+                <span class="tensor-shape">(B, T, 512)</span>
+                <span class="tensor-desc">Unscaled logits over 512 vocabulary tokens</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-inventory">
+          <h3>Source File Inventory</h3>
+          <div class="inventory-grid">
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/tokenizer.py</span>
+              <p>Byte-level BPE tokenizer written from scratch. Merges learned with priority-queue heap index. Lossless UTF-8 roundtrip.</p>
+            </div>
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/attention.py</span>
+              <p>Explicit multi-head attention with causal mask. Does not use torch.nn.MultiheadAttention or flash attention.</p>
+            </div>
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/block.py</span>
+              <p>Pre-LN transformer block: LN before attention and before MLP. Residual skip connections.</p>
+            </div>
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/model.py</span>
+              <p>Complete decoder-only GPT model. Supports learned, sinusoidal, and none positional encodings.</p>
+            </div>
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/train.py</span>
+              <p>AdamW optimization loop, linear warmup, cosine learning rate decay, gradient clipping, bit-exact checkpoint resume.</p>
+            </div>
+            <div class="inventory-item">
+              <span class="item-path">src/gpt/eval.py</span>
+              <p>Non-overlapping window validation perplexity and autoregressive sampling with temperature, top-k, and nucleus top-p.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 4: Corpus & Reference Generations -->
+    <section class="workbench-view hidden" id="view-corpus">
+      <div class="corpus-layout">
+        <header class="section-intro">
+          <h2>Tiny Shakespeare Dataset & Benchmark Generations</h2>
+          <p>Training corpus is 1,115,394 characters (~300,000 tokens) split 90% train / 10% validation.</p>
+        </header>
+
+        <div class="samples-grid">
+          <div class="sample-box">
+            <div class="sample-header">
+              <span class="sample-tag">Low Temperature (T = 0.4, Top-k 50)</span>
+              <span class="sample-prompt">Prompt: "ROMEO:"</span>
+            </div>
+            <pre class="sample-pre">ROMEO:
+I would I were your son, and that the world
+Should be the master of my father's soul:
+I will not marry yet; and, when I do, I swear,
+It shall be Romeo, whom you know I hate,
+Rather than Paris. These are news indeed!</pre>
+            <p class="sample-desc">At low temperature, the generation is conservative, sticking closely to high-frequency phrases and exact grammatical forms observed in the training data.</p>
+          </div>
+
+          <div class="sample-box">
+            <div class="sample-header">
+              <span class="sample-tag">Standard Sampling (T = 0.8, Top-k 50, Top-p 0.95)</span>
+              <span class="sample-prompt">Prompt: "DUKE VINCENTIO:"</span>
+            </div>
+            <pre class="sample-pre">DUKE VINCENTIO:
+Most mercy, sir, the Angelo
+His nursed stealing, whose friends.
+
+POMPEY:
+O, that who! 'tis Pettried, and my grace
+As if you find to make your brother,
+Not against the dangerous souls,</pre>
+            <p class="sample-desc">Standard sampling produces rhythmic blank verse with accurate speaker tags and vocabulary, while occasionally hallucinating archaic compounds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
